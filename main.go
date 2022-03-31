@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 )
 
 //!+main
@@ -19,6 +20,8 @@ func main() {
 	db := database{"shoes": 50, "socks": 5}
 	http.HandleFunc("/list", db.list)
 	http.HandleFunc("/price", db.price)
+	http.HandleFunc("/create", db.create)
+	http.HandleFunc("/update", db.update)
 	log.Fatal(http.ListenAndServe("localhost:8000", nil))
 }
 
@@ -44,4 +47,40 @@ func (db database) price(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusNotFound) // 404
 		fmt.Fprintf(w, "no such item: %q\n", item)
 	}
+}
+
+func (db database) create(w http.ResponseWriter, req *http.Request) {
+	item := req.URL.Query().Get("item")
+	price := req.URL.Query().Get("price")
+	price1, err := strconv.Atoi(price)
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "invalid price: %q\n", item)
+		return
+	}
+
+	db[item] = dollars(price1)
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (db database) update(w http.ResponseWriter, req *http.Request) {
+	item := req.URL.Query().Get("item")
+	price := req.URL.Query().Get("price")
+	price1, err := strconv.Atoi(price)
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "invalid price: %q\n", item)
+		return
+	}
+
+	if _, exists := db[item]; exists {
+		db[item] = dollars(price1)
+		w.WriteHeader(http.StatusCreated)
+	} else {
+		w.WriteHeader(http.StatusNotFound) // 404
+		fmt.Fprintf(w, "no such item: %q\n", item)
+	}
+
 }
